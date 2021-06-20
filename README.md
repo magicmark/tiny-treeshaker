@@ -1,6 +1,6 @@
 # 🌳🥤 tiny-treeshaker
 
-A really bad tree shaker (experimental)
+A really ~bad~ tiny tree shaker (experimental)
 
 ### Why?
 
