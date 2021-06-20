@@ -1,4 +1,4 @@
-# tiny-treeshaker
+# 🌳🥤 tiny-treeshaker
 
 A really bad tree shaker (experimental)
 
