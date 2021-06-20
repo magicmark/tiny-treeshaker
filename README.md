@@ -11,7 +11,7 @@ of things to tree shake away. (allowlist vs denylist).
 
 The goal of this is to be:
 - small as possible (whilst still being "correct")
-- simple to understand / extend / chop and change
+- simple to understand / extend / chop and change as needed
 
 ### What you should probably use instead
 
