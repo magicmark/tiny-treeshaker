@@ -1,68 +1,8 @@
-const Collection = require('jscodeshift/src/Collection');
+import { getReferenceFromScope, getTopLevelThing } from './helpers';
 
-// Nodes types where identifiers could be defined or imported (that we may want to remove)
-const ORIGINS = ['ImportSpecifier', 'VariableDeclarator', 'FunctionDeclaration', 'ImportDefaultSpecifier'];
-
-export default function transformer(file, api, options) {
+export default function transformer(file, api) {
     const j = api.jscodeshift;
     const root = j(file.source);
-    const isTopLevel = (path) => path.parent.value.type === 'Program';
-
-    /**
-     * Inspired by getVariableDeclarator
-     * @see https://github.com/facebook/jscodeshift/blob/57a9d9c73/src/collections/Node.js#L103
-     *
-     * Given an identifier name, look up where in scope it could be imported from
-     */
-    function getReferenceFromScope(path, identifier) {
-        let scope = path.scope;
-        if (!scope) return;
-
-        scope = scope.lookup(identifier);
-        if (!scope) return;
-
-        const bindings = scope.getBindings()[identifier];
-        if (!bindings) return;
-
-        const decl = Collection.fromPaths(bindings);
-
-        for (const origin of ORIGINS) {
-            if (decl.closest(j[origin]).length === 1) {
-                return decl.closest(j[origin]).get();
-            }
-        }
-    }
-
-    /**
-     * Get a "thing" defined at the top level.
-     * Could be a function, variable, object, class etc.
-     * @return NodePath?
-     */
-    function getTopLevelThing(idName) {
-        const variables = root
-            .find(j.VariableDeclaration, {
-                declarations: [{ id: { name: idName } }],
-            })
-            .filter(isTopLevel);
-
-        // TODO: warn if length >= 2?
-        // It would/should be invalid for a program to have two top level things of the same name
-        if (variables.length === 1) {
-            // .get() returns the first item
-            // @see https://github.com/facebook/jscodeshift/blob/57a9d9c/src/Collection.js#L210
-            return variables.get();
-        }
-
-        const functions = root
-            .find(j.FunctionDeclaration, {
-                id: { name: idName },
-            })
-            .filter(isTopLevel);
-
-        if (functions.length === 1) {
-            return functions.get();
-        }
-    }
 
     // Store all "things" (Functions, Classes, Objects, Variables etc) that are exported.
     // (If something is exported, that means we consider it as "used").
@@ -146,7 +86,7 @@ export default function transformer(file, api, options) {
                 })
                 .forEach((path) => {
                     const name = path.value.name;
-                    const reference = getReferenceFromScope(path, name);
+                    const reference = getReferenceFromScope(j, path, name);
                     if (!reference) {
                         throw new Error(`variable name (${name}) reference does not exist`);
                     }

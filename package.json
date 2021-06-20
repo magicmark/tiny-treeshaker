@@ -5,5 +5,10 @@
   "license": "MIT",
   "dependencies": {
     "jscodeshift": "^0.12.0"
+  },
+  "type": "module",
+  "devDependencies": {
+    "chalk": "^4.1.1",
+    "execa": "^5.1.1"
   }
 }

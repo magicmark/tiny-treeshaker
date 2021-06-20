@@ -1,7 +1,6 @@
 import { Bar, Baz, Boz, Foo as MyFoo } from 'some/module2';
 import { Qux as Quux, Qux2 } from 'some/module3';
 
-// some comment
 import Fooooo from 'some/module1'
 
 const unused1 = () => {},
