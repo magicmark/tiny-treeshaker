@@ -1,15 +1,24 @@
-import { Bar, Baz, Foo } from 'some/module';
+import { Bar, Baz, Boz, Foo as MyFoo } from 'some/module2';
+import { Qux as Quux, Qux2 } from 'some/module3';
 
-const unused = () => {};
+// some comment
+import Fooooo from 'some/module1'
+
+const unused1 = () => {},
+    hello = 'world';
+const unused2 = '';
+function unused3() {}
+const unused4 = function () {};
 
 const getFoo = () => 'Foo';
 const getFooBar = () => `${getFoo()} Bar`;
 
-function getFooBarBaz () {
+function getFooBarBaz() {
     return `${getFooBar} Baz`;
 }
 
 export function main() {
-    Foo();
+    MyFoo();
+    Boz();
     console.log(getFooBarBaz());
 }

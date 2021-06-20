@@ -1,5 +1,8 @@
 const Collection = require('jscodeshift/src/Collection');
 
+// Nodes types where identifiers could be defined or imported (that we may want to remove)
+const ORIGINS = ['ImportSpecifier', 'VariableDeclarator', 'FunctionDeclaration', 'ImportDefaultSpecifier'];
+
 export default function transformer(file, api, options) {
     const j = api.jscodeshift;
     const root = j(file.source);
@@ -8,31 +11,25 @@ export default function transformer(file, api, options) {
     /**
      * Inspired by getVariableDeclarator
      * @see https://github.com/facebook/jscodeshift/blob/57a9d9c73/src/collections/Node.js#L103
-     * 
+     *
      * Given an identifier name, look up where in scope it could be imported from
      */
-    function getReferenceFromScope(path, variableName) {
+    function getReferenceFromScope(path, identifier) {
         let scope = path.scope;
         if (!scope) return;
 
-        scope = scope.lookup(variableName);
+        scope = scope.lookup(identifier);
         if (!scope) return;
 
-        const bindings = scope.getBindings()[variableName];
+        const bindings = scope.getBindings()[identifier];
         if (!bindings) return;
 
         const decl = Collection.fromPaths(bindings);
 
-        if (decl.closest(j.ImportSpecifier).length === 1) {
-            return decl.closest(j.ImportSpecifier).get();
-        }
-
-        if (decl.closest(j.VariableDeclarator).length === 1) {
-            return decl.closest(j.VariableDeclarator).get();
-        }
-
-        if (decl.closest(j.FunctionDeclaration).length === 1) {
-            return decl.closest(j.FunctionDeclaration).get();
+        for (const origin of ORIGINS) {
+            if (decl.closest(j[origin]).length === 1) {
+                return decl.closest(j[origin]).get();
+            }
         }
     }
 
@@ -79,7 +76,7 @@ export default function transformer(file, api, options) {
     root.find(j.ExportNamedDeclaration, {
         declaration: { type: 'FunctionDeclaration', id: { type: 'Identifier' } },
     }).forEach((path) => {
-        exportedThings.add(path);
+        exportedThings.add(j(path).find(j.FunctionDeclaration).get());
     });
 
     /**
@@ -165,16 +162,46 @@ export default function transformer(file, api, options) {
 
     addLiveNodePaths();
 
-    // TODO: filter this to be top level variables
+    // For everythig in ORIGINS, remove all (top level?) origin sites
+
+    // TODO: filter this to be top level variables?
     root.find(j.VariableDeclarator).forEach((path) => {
         if (!liveNodePaths.has(path)) {
-            console.log('tree shaking', path.node.id.name);
+            if (path.parentPath.value.length === 1) {
+                // Remove the whole VariableDeclaration if this is the only declarator
+                // (remember, `let foo = 'foo', bar = 'bar'` is a thing)
+                j(path).closest(j.VariableDeclaration).remove();
+            } else {
+                j(path).remove();
+            }
+        }
+    });
+
+    root.find(j.FunctionDeclaration).forEach((path) => {
+        if (!liveNodePaths.has(path)) {
+            j(path).remove();
         }
     });
 
     root.find(j.ImportSpecifier).forEach((path) => {
         if (!liveNodePaths.has(path)) {
-            console.log('tree shaking', path.node.imported.name);
+            if (path.parentPath.value.length === 1) {
+                // Remove the whole ImportDeclaration if this is the only import
+                j(path).closest(j.ImportDeclaration).remove();
+            } else {
+                j(path).remove();
+            }
+        }
+    });
+
+    root.find(j.ImportDefaultSpecifier).forEach((path) => {
+        if (!liveNodePaths.has(path)) {
+            if (path.parentPath.value.length === 1) {
+                // Remove the whole ImportDeclaration if this is the only import
+                j(path).closest(j.ImportDeclaration).remove();
+            } else {
+                j(path).remove();
+            }
         }
     });
 
