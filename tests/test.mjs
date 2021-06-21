@@ -5,10 +5,16 @@ import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
 import path from 'path';
 
+const [, , filter] = process.argv;
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const fixtures = await fs.readdir(path.join(__dirname, 'fixtures'));
 
 for await (const fixture of fixtures) {
+    if (typeof filter === 'string' && fixture !== filter) {
+        continue;
+    }
+
     process.stdout.write(`* Testing ${chalk.bold(fixture)}... `);
     const fixtureDir = path.join(__dirname, 'fixtures', fixture);
 
@@ -23,6 +29,10 @@ for await (const fixture of fixtures) {
         path.join(fixtureDir, 'input.js'),
     ]);
 
-    assert.equal(expected.trim(), actual.trim());
-    process.stdout.write(`OK!\n`); 
+    // jscodeshift can output the empty string if no change
+    // TODO: always output something?
+    if (actual !== '') {
+        assert.equal(actual.trim(), expected.trim());
+    }
+    process.stdout.write(`OK!\n`);
 }

@@ -1,8 +1,43 @@
-import { getReferenceFromScope, getTopLevelThing } from './helpers';
+import { getReferenceFromScope, isTopLevel } from './helpers';
 
 export default function transformer(file, api) {
     const j = api.jscodeshift;
     const root = j(file.source);
+
+    /**
+     * Get a "thing" defined at the top level.
+     * Could be a function, variable, object, class etc.
+     * @return NodePath?
+     */
+    function getTopLevelThing(identifierName) {
+        const variables = root
+            .find(j.VariableDeclarator, {
+                id: { name: identifierName },
+            })
+            .filter((path) => {
+                // check this a top level variable
+                const declaration = j(path).closest(j.VariableDeclaration).get();
+                return declaration.parent.value.type === 'Program';
+            });
+
+        // TODO: warn if length >= 2?
+        // It would/should be invalid for a program to have two top level things of the same name
+        if (variables.length === 1) {
+            // .get() returns the first item
+            // @see https://github.com/facebook/jscodeshift/blob/57a9d9c/src/Collection.js#L210
+            return variables.get();
+        }
+
+        const functions = root
+            .find(j.FunctionDeclaration, {
+                id: { name: identifierName },
+            })
+            .filter(isTopLevel);
+
+        if (functions.length === 1) {
+            return functions.get();
+        }
+    }
 
     // Store all "things" (Functions, Classes, Objects, Variables etc) that are exported.
     // (If something is exported, that means we consider it as "used").
