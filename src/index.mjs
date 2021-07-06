@@ -218,4 +218,5 @@ export default function transformer(file, api) {
     return root.toSource();
 }
 
-// export const parser = 'flow';
+// you may need to fiddle with this line
+export const parser = 'flow';
