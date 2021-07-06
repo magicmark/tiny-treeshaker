@@ -1,5 +1,5 @@
 const Foo = () => {
-    return 'foo'
+    return 'foo';
 };
 
 export default Foo;

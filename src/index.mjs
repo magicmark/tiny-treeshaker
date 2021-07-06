@@ -176,7 +176,7 @@ export default function transformer(file, api) {
     root.find(j.FunctionDeclaration).forEach((path) => {
         // TODO: this is gross! the set should probably be a set of nodes instead of node paths?
         // or maybe we maintain two sets?
-        if (![...liveNodePaths].map(np => np.value).includes(path.value)) {
+        if (![...liveNodePaths].map((np) => np.value).includes(path.value)) {
             j(path).remove();
         }
     });
