@@ -15,6 +15,7 @@ export function getReferenceFromScope(j, path, identifier) {
     let scope = path.scope;
     if (!scope) return;
 
+    // https://github.com/benjamn/ast-types/blob/53123a2be5e0/lib/scope.ts#L374
     scope = scope.lookup(identifier);
     if (!scope) return;
 

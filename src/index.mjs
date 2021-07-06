@@ -87,7 +87,16 @@ export default function transformer(file, api) {
         exportedThings.add(thing);
     });
 
+    // Recursively add every "live" identifier, starting with the top level
+    // exported functions.
     const liveNodePaths = new Set(exportedThings);
+
+    // TODO: maybe this is gross?
+    // We need to maintain the node paths (in liveNodePaths), in order for
+    // getReferenceFromScope to work.
+    // But we also need liveNodes cos paths can change, so 
+    // Maybe maintaining two sets is ok, but also maybe there's a better way.
+    const liveNodes = new Set([...exportedThings].map((nodePath) => nodePath.value));
 
     /**
      * For every live node path (initially set to all exported functions and
@@ -143,6 +152,7 @@ export default function transformer(file, api) {
                     }
 
                     liveNodePaths.add(reference);
+                    liveNodes.add(reference.value);
                 });
         });
 
@@ -174,9 +184,9 @@ export default function transformer(file, api) {
         });
 
     root.find(j.FunctionDeclaration).forEach((path) => {
-        // TODO: this is gross! the set should probably be a set of nodes instead of node paths?
-        // or maybe we maintain two sets?
-        if (![...liveNodePaths].map((np) => np.value).includes(path.value)) {
+        // TODO: comparing the node paths doesn't work - they change. We need to
+        // compare the raw nodes
+        if (!liveNodes.has(path.value)) {
             j(path).remove();
         }
     });
