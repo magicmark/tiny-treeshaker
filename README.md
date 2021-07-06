@@ -15,6 +15,12 @@ The goal of this is to be:
 - small as possible (while still being "correct". This won't shake away things you use, but may not shake away everything you don't use.)
 - simple to understand / extend / chop and change as needed
 
+### Usage
+
+- Clone this repo
+- [Install jscodeshift](https://github.com/facebook/jscodeshift)
+- Run with the CLI (e.g. `jscodeshift --transform /path/to/tiny-treeshaker/src/index.mjs ...`)
+
 ### Work in progress
 
 This doesn't shake _everything_ away just yet (sorry!), but gets most of the common cases (i.e. enough to be used when targeting a specific thing)

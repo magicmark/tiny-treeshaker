@@ -1,5 +1,7 @@
 import { getReferenceFromScope, isTopLevel } from './helpers';
 
+import DOM_TAGS from './dom_tags';
+
 export default function transformer(file, api) {
     const j = api.jscodeshift;
     const root = j(file.source);
@@ -118,12 +120,26 @@ export default function transformer(file, api) {
                     if (!path.parentPath.value.type) return true;
                     if (path.parentPath.value.type === 'ReturnStatement') return true;
                     if (path.parentPath.value.type === 'CallExpression') return true;
+                    if (path.parentPath.value.type === 'JSXOpeningElement') return true;
                 })
                 .forEach((path) => {
                     const name = path.value.name;
                     const reference = getReferenceFromScope(j, path, name);
+
                     if (!reference) {
-                        throw new Error(`variable name (${name}) reference does not exist`);
+                        // Check if the tag being referenced is a DOM tag
+                        if (path.value.type === 'JSXIdentifier' && DOM_TAGS.includes(name)) {
+                            return;
+                        }
+
+                        // Otherwise, we're trying to reference a variable or function that does not exist
+                        // (Or a global that this codemod doesn't know about yet)
+                        throw new Error(
+                            [
+                                `The definition for ${name} does not exist.`,
+                                "Either your code is invalid, or that's a global we haven't added yet.",
+                            ].join('\n'),
+                        );
                     }
 
                     liveNodePaths.add(reference);
@@ -139,21 +155,28 @@ export default function transformer(file, api) {
 
     // For everythig in ORIGINS, remove all (top level?) origin sites
 
-    // TODO: filter this to be top level variables?
-    root.find(j.VariableDeclarator).forEach((path) => {
-        if (!liveNodePaths.has(path)) {
-            if (path.parentPath.value.length === 1) {
-                // Remove the whole VariableDeclaration if this is the only declarator
-                // (remember, `let foo = 'foo', bar = 'bar'` is a thing)
-                j(path).closest(j.VariableDeclaration).remove();
-            } else {
-                j(path).remove();
+    root.find(j.VariableDeclarator)
+        .filter((path) => {
+            // We only want top level variable declarations to be filtered out
+            const declaration = j(path).closest(j.VariableDeclaration).get();
+            return isTopLevel(declaration);
+        })
+        .forEach((path) => {
+            if (!liveNodePaths.has(path)) {
+                if (path.parentPath.value.length === 1) {
+                    // Remove the whole VariableDeclaration if this is the only declarator
+                    // (remember, `let foo = 'foo', bar = 'bar'` is a thing)
+                    j(path).closest(j.VariableDeclaration).remove();
+                } else {
+                    j(path).remove();
+                }
             }
-        }
-    });
+        });
 
     root.find(j.FunctionDeclaration).forEach((path) => {
-        if (!liveNodePaths.has(path)) {
+        // TODO: this is gross! the set should probably be a set of nodes instead of node paths?
+        // or maybe we maintain two sets?
+        if (![...liveNodePaths].map(np => np.value).includes(path.value)) {
             j(path).remove();
         }
     });
@@ -182,3 +205,5 @@ export default function transformer(file, api) {
 
     return root.toSource();
 }
+
+// export const parser = 'flow';

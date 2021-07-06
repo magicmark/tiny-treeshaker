@@ -29,3 +29,25 @@ export function getReferenceFromScope(j, path, identifier) {
         }
     }
 }
+
+// useful for debugging ast objects
+export function pprint(pathOrNode) {
+    let node;
+
+    if (pathOrNode.value) {
+        node = pathOrNode.value;
+    } else {
+        node = pathOrNode;
+    }
+
+    let name;
+
+    if (node.id) {
+        name = node.id.name;
+    }
+
+    return {
+        type: node.type,
+        name,
+    };
+}

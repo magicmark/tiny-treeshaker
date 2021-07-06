@@ -1,14 +1,15 @@
 {
-  "name": "bad-treeshaker",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "tiny-treeshaker",
+  "version": "1.0.1",
+  "main": "src/index.mjs",
   "license": "MIT",
-  "dependencies": {
-    "jscodeshift": "^0.12.0"
+  "scripts": {
+    "test": "node tests/test.mjs"
   },
   "type": "module",
   "devDependencies": {
     "chalk": "^4.1.1",
-    "execa": "^5.1.1"
+    "execa": "^5.1.1",
+    "jscodeshift": "^0.12.0"
   }
 }
