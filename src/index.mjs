@@ -44,7 +44,14 @@ export default function transformer(file, api) {
     // Store all "things" (Functions, Classes, Objects, Variables etc) that are exported.
     // (If something is exported, that means we consider it as "used").
     // Anything referenced inside an exported thing will _not_ be shaken away.
-    const exportedThings = new Set();
+    const liveNodePaths = new Set();
+
+    // TODO: maybe this is gross?
+    // We need to maintain the node paths (in liveNodePaths), in order for
+    // getReferenceFromScope to work.
+    // But we also need liveNodes cos paths can change, so 
+    // Maybe maintaining two sets is ok, but also maybe there's a better way.
+    const liveNodes = new Set();
 
     /**
      * Find all functions that are exported inline
@@ -53,7 +60,8 @@ export default function transformer(file, api) {
     root.find(j.ExportNamedDeclaration, {
         declaration: { type: 'FunctionDeclaration', id: { type: 'Identifier' } },
     }).forEach((path) => {
-        exportedThings.add(j(path).find(j.FunctionDeclaration).get());
+        liveNodePaths.add(j(path).find(j.FunctionDeclaration).get());
+        liveNodes.add(j(path).find(j.FunctionDeclaration).get().value);
     });
 
     /**
@@ -70,7 +78,8 @@ export default function transformer(file, api) {
             if (!thing) {
                 throw new Error(`Could not find exported thing: ${name}`);
             }
-            exportedThings.add(thing);
+            liveNodePaths.add(thing);
+            liveNodes.add(thing.value);
         });
     });
 
@@ -84,21 +93,14 @@ export default function transformer(file, api) {
         if (!thing) {
             throw new Error(`Could not find exported thing: ${name}`);
         }
-        exportedThings.add(thing);
+        liveNodePaths.add(thing);
+        liveNodes.add(thing.value);
     });
 
-    // Recursively add every "live" identifier, starting with the top level
-    // exported functions.
-    const liveNodePaths = new Set(exportedThings);
-
-    // TODO: maybe this is gross?
-    // We need to maintain the node paths (in liveNodePaths), in order for
-    // getReferenceFromScope to work.
-    // But we also need liveNodes cos paths can change, so 
-    // Maybe maintaining two sets is ok, but also maybe there's a better way.
-    const liveNodes = new Set([...exportedThings].map((nodePath) => nodePath.value));
-
     /**
+     * Recursively add every "live" identifier, starting with the top level
+     * exported functions.
+     *
      * For every live node path (initially set to all exported functions and
      * variables etc), find all pointers to other variables/functions etc and
      * add them to liveNodePaths.
