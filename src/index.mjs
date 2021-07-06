@@ -49,7 +49,7 @@ export default function transformer(file, api) {
     // TODO: maybe this is gross?
     // We need to maintain the node paths (in liveNodePaths), in order for
     // getReferenceFromScope to work.
-    // But we also need liveNodes cos paths can change, so 
+    // But we also need liveNodes cos paths can change, so
     // Maybe maintaining two sets is ok, but also maybe there's a better way.
     const liveNodes = new Set();
 
