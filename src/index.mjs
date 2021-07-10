@@ -206,6 +206,10 @@ export default function transformer(file, api) {
 
     root.find(j.ImportDefaultSpecifier).forEach((path) => {
         if (!liveNodePaths.has(path)) {
+            // Allowlist `import React from 'react';`
+            const importSource = j(path).closest(j.ImportDeclaration).get().value.source.value;
+            if (importSource === 'react') return;
+
             if (path.parentPath.value.length === 1) {
                 // Remove the whole ImportDeclaration if this is the only import
                 j(path).closest(j.ImportDeclaration).remove();
